@@ -1,0 +1,8 @@
+Auto Tab (0.2)  2007-03-23
+  * Changed to use "loaded" and "saved" signals instead of update_ui.
+  * Added Modelines plugin compatibility, if the Modelines plugin is active and
+    has set tab settings they will be respected and displayed as-is.
+  * Added CHANGELOG file.
+
+Auto Tab (0.1)  2007-03-11
+  * Initial release to http://code.google.com/p/gedit-autotab/
