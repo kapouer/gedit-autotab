@@ -119,6 +119,13 @@ class AutoTab(gedit.Plugin):
     if error is not None:
       pass
     
+    # Other plugins compatibility, other plugins can do
+    # view.set_data("AutoTabSkip", True)
+    # and Auto Tab will skip that document as long as this value is true.
+    if view.get_data("AutoTabSkip"):
+      self.update_status()
+      return
+    
     # Modelines plugin compatibility, if ModelineOptions has been set with
     # any tab related data, we assume Modelines has done the right thing and
     # just update our UI with the existing settings.

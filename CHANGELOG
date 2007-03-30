@@ -1,3 +1,7 @@
+Auto Tab (0.3)  2007-03-30
+  * Added a way for other plugins to tell Auto Tab to skip processing a 
+    document with view.set_data("AutoTabSkip", True).
+
 Auto Tab (0.2)  2007-03-23
   * Changed to use "loaded" and "saved" signals instead of update_ui.
   * Added Modelines plugin compatibility, if the Modelines plugin is active and

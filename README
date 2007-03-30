@@ -13,3 +13,13 @@ You should not need to do anything, the plugin should take care of adjusting the
 You can see an entry in the status bar like "Auto Tab: (S2)" which shows what mode the current buffer is in. The first character will be either S for space or T for tabs, and the second will be the width.
 
 If the Modelines plugin is also activated, any modelines it reads will be respected (Auto Tab will just display those values instead, and skip guessing altogether for that file).
+
+OTHER PLUGIN AUTHORS:
+
+If you want to make Auto Tab skip processing a certain view, simply do:
+
+  view.set_data("AutoTabSkip", True)
+
+Setting the same value to False will tell Auto Tab to start processing it again.
+This allows your plugin to take control over the settings of certain buffers
+while letting Auto Tab handle the rest.
