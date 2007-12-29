@@ -5,6 +5,7 @@
 # will take precedence.
 #
 # Copyright (C) 2007 Kristoffer Lundén (kristoffer.lunden@gmail.com)
+# Copyright (C) 2007 Lars Uebernickel (larsuebernickel@gmx.de)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,11 +23,9 @@
 # Boston, MA 02111-1307, USA.
 #
 
-# Man, is this the weirdest need-to-do ever...
-from __future__ import division
 import gedit
 import gconf
-from operator import itemgetter
+import operator
 
 class AutoTab(gedit.Plugin):
 
@@ -95,7 +94,7 @@ class AutoTab(gedit.Plugin):
   def update_tabs(self, size, space):
     view = self.window.get_active_view()
     if view:
-      view.set_tabs_width(size)
+      view.set_tab_width(size)
       view.set_insert_spaces_instead_of_tabs(space)
       self.update_status()
       
@@ -104,11 +103,14 @@ class AutoTab(gedit.Plugin):
     view = self.window.get_active_view()
     if view:
       space = view.get_insert_spaces_instead_of_tabs()
-      size = view.get_tabs_width()
-      message = "%s%i" % (space and 'S' or 'T', size)
+      size = view.get_tab_width()
+      if space:
+        message = "%i Spaces" % size
+      else:
+        message = "Tabs"
       if self.message_id:
         self.statusbar.remove(self.context_id, self.message_id)
-      self.message_id = self.statusbar.push(self.context_id, "Auto Tab: (%s)" % message)
+      self.message_id = self.statusbar.push(self.context_id, "Indentation: %s" % message)
 
   # Make sure correct tabs are displayed
   def update_ui(self, window):
@@ -139,61 +141,40 @@ class AutoTab(gedit.Plugin):
 		# start of Auto Tabs own stuff
 		    
     start, end = doc.get_bounds()
+    if not end:
+      return
     text = doc.get_text(start, end)
 
-    # A little index is being built...
-    indent_count = {'tabs':0, '12':0, '123':0, '1234':0, '12345678':0}
-    
+    indent_count = {'tabs':0, 2:0, 3:0, 4:0, 8:0}
+    last_indent = 0
     for line in text.splitlines():
-      if len(line) == 0: continue
+      if len(line) == 0 or not line[0].isspace():
+        continue
       
-      # Tab or space?
-      if line[0] == "\t":
+      if line[0] == '\t':
         indent_count['tabs'] += 1
-      else:
-        length = 0
-        while line[0] == " ":
-          length += 1
-          line = line[1:]
-          if len(line) == 0: break
-
-        # Otherwise empty lines have often bogus indents
-        if len(line) == 0: continue
+        continue
         
-        # No spaces there
-        if length == 0: continue
+      indent = 0
+      while line.startswith(' '):
+        indent += 1
+        line = line[1:]
+       
+      if indent == last_indent:
+        continue
+      for i in (2, 3, 4, 8):
+        if last_indent + i == indent:
+          indent_count[i] += 1;
+          break
+      last_indent = indent
 
-        # Count the possible space variations from the common cases.          
-        elif length % 8 == 0:
-          indent_count['12345678'] += 1
-          indent_count['1234'] += 1
-          indent_count['12'] += 1
-        elif length % 4 == 0:
-          indent_count['1234'] += 1
-          indent_count['12'] += 1
-        elif length % 6 == 0:
-          indent_count['123'] += 1
-          indent_count['12'] += 1
-        elif length % 3 == 0:
-          indent_count['123'] += 1
-        elif length == 2:
-          indent_count['12'] += 1
-    
-    # Weird sort function. Also, a reverse would have been more logical,
-    # but no array.shift() in python (though there are workarounds).      
-    sorted_indent = sorted(indent_count.items(), key=itemgetter(1))
-    if sorted_indent[-1][1] == 0:
-      self.update_tabs(self.tabs_width, self.spaces_instead_of_tabs)
-    elif sorted_indent[-1][0] == 'tabs':
+    # no indentations, leave old values
+    if sum(indent_count.values()) == 0:
+      return
+
+    winner = max(indent_count, key=indent_count.get)
+    if winner == 'tabs':
       self.update_tabs(self.tabs_width, False)
     else:
-      try:
-        if sorted_indent[-1][1] == 2 and sorted_indent[-2][1] % 8 == 0:
-          # If something needs tweaking, look at the 1.1 here.
-          # It helps weight 2 spaces versus 4 and 8, and is found out via
-          # a lot of tests. It may need to be slightly bigger.
-          if sorted_indent[-1][1] / sorted_indent[-2][1] < 1.1:
-            sorted_indent.pop()
-      except ZeroDivisionError: pass
-      
-      self.update_tabs(len(sorted_indent[-1][0]), True)
+      self.update_tabs(winner, True)
+    
