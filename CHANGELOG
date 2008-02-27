@@ -1,3 +1,8 @@
+Auto Tab (0.4)  2008-02-27
+  * New, smarter algorithm courtesy of Lars Uebernickel.
+  * Bugfix for Gedit 2.20 and above (fixes issue #2 and #3)
+  * GPLv3
+
 Auto Tab (0.3)  2007-03-30
   * Added a way for other plugins to tell Auto Tab to skip processing a 
     document with view.set_data("AutoTabSkip", True).
