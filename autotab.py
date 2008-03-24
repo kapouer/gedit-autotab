@@ -46,7 +46,7 @@ class AutoTab(gedit.Plugin):
 
     for view in window.get_views(): 
       self.connect_handlers(view)
-      auto_tab(view.get_buffer(), None, view)
+      self.auto_tab(view.get_buffer(), None, view)
 
     tab_added_id = window.connect("tab_added", lambda w, t: self.connect_handlers(t.get_view()))
     window.set_data("AutoTabPluginHandlerId", tab_added_id)
