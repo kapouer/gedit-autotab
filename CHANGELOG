@@ -1,3 +1,6 @@
+Auto Tab (next version)
+  * Fixed small typo, closes issue #4
+
 Auto Tab (0.4)  2008-02-27
   * New, smarter algorithm courtesy of Lars Uebernickel.
   * Bugfix for Gedit 2.20 and above (fixes issue #2 and #3)
