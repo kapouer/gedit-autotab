@@ -1,9 +1,12 @@
+Auto Tab (0.6)  Date pending
+  * Special case Makefiles so they always use tabs.
+
 Auto Tab (0.5)  2008-09-19
-  * Bugfix release: Closes issues #4 and #5
+  * Bugfix release: Closes issues #4 and #5.
 
 Auto Tab (0.4)  2008-02-27
   * New, smarter algorithm courtesy of Lars Uebernickel.
-  * Bugfix for Gedit 2.20 and above (fixes issue #2 and #3)
+  * Bugfix for Gedit 2.20 and above (fixes issue #2 and #3).
   * GPLv3
 
 Auto Tab (0.3)  2007-03-30
