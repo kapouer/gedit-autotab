@@ -8,11 +8,11 @@ Done!
 
 USAGE:
 
-You should not need to do anything, the plugin should take care of adjusting the tab width and space/tab settings for each file as you edit them. The plugin assumes that either tabs, or spaces width a width of 2, 3, 4 or 8 is used. In the case of tabs, your local settings is used for the width to display.
-
-You can see an entry in the status bar like "Auto Tab: (S2)" which shows what mode the current buffer is in. The first character will be either S for space or T for tabs, and the second will be the width.
+You should not need to do anything, the plugin should take care of adjusting the tab width and space/tab settings for each file as you edit them. The plugin assumes that either tabs, or spaces width a width of 2, 3, 4 or 8 is used. In the case of tabs, your local settings is used for the width to display. You can see an entry in the status bar that will tell what the current indentation is.
 
 If the Modelines plugin is also activated, any modelines it reads will be respected (Auto Tab will just display those values instead, and skip guessing altogether for that file).
+
+The plugin also special cases Makefiles, so that they always use tabs for indentation.
 
 OTHER PLUGIN AUTHORS:
 
