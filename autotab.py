@@ -117,7 +117,7 @@ class AutoTab(gedit.Plugin):
   def auto_tab(self, doc, error, view):
     if error is not None:
       pass
-    
+
     # Other plugins compatibility, other plugins can do
     # view.set_data("AutoTabSkip", True)
     # and Auto Tab will skip that document as long as this value is true.
@@ -136,7 +136,12 @@ class AutoTab(gedit.Plugin):
 		
 		# End of Modelines stuff,
 		# start of Auto Tabs own stuff
-		    
+
+    # Special case for makefiles, so the plugin uses tabs even for the empty file:		
+    if doc.get_mime_type() == "text/x-makefile" or doc.get_short_name_for_display() == "Makefile":
+      self.update_tabs(self.tabs_width, False)
+      return
+				    
     start, end = doc.get_bounds()
     if not end:
       return
