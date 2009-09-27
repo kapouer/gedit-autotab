@@ -1,5 +1,6 @@
-Auto Tab (0.6)  Date pending
+Auto Tab (0.6)  2009-09-27
   * Special case Makefiles so they always use tabs.
+  * Fix proper counting of indentation, patch from danielfalk22 (issue #7)
 
 Auto Tab (0.5)  2008-09-19
   * Bugfix release: Closes issues #4 and #5.

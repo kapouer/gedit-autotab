@@ -143,18 +143,21 @@ class AutoTab(gedit.Plugin):
       return
 				    
     start, end = doc.get_bounds()
+
     if not end:
       return
     text = doc.get_text(start, end)
 
     indent_count = {'tabs':0, 2:0, 3:0, 4:0, 8:0}
     last_indent = 0
+    last_indent_spaces = None
     for line in text.splitlines():
       if len(line) == 0 or not line[0].isspace():
         continue
       
       if line[0] == '\t':
         indent_count['tabs'] += 1
+        last_indent_spaces = None
         continue
         
       indent = 0
@@ -163,12 +166,15 @@ class AutoTab(gedit.Plugin):
         line = line[1:]
        
       if indent == last_indent:
+        if last_indent_spaces:
+          indent_count[last_indent_spaces] += 1
         continue
       for i in (2, 3, 4, 8):
         if last_indent + i == indent:
+          last_indent_spaces = i
           indent_count[i] += 1;
+          last_indent = indent
           break
-      last_indent = indent
 
     # no indentations, leave old values
     if sum(indent_count.values()) == 0:
