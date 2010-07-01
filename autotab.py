@@ -181,7 +181,7 @@ class AutoTab(gedit.Plugin):
           last_indent = indent
           break
 
-    # no indentations, leave old values
+    # no indentations detected
     if sum(indent_count.values()) == 0:
       # if we've seen tabs or spaces, default to those
       # can't guess at size, so using default
