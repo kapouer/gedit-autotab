@@ -1,3 +1,7 @@
+Auto Tab (trunk) 2010-07-01
+  * Fix deprecation warning (issue #8)
+  * Added a Makefile for install/uninstall
+
 Auto Tab (0.6)  2009-09-27
   * Special case Makefiles so they always use tabs.
   * Fix proper counting of indentation, patch from danielfalk22 (issue #7)
