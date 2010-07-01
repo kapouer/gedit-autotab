@@ -151,7 +151,8 @@ class AutoTab(gedit.Plugin):
     indent_count = {'tabs':0, 2:0, 3:0, 4:0, 8:0}
     last_indent = 0
     last_indent_spaces = None
-    seen_tab = False
+    seen_tabs = 0
+    seen_spaces = 0
     for line in text.splitlines():
       if len(line) == 0 or not line[0].isspace():
         continue
@@ -159,8 +160,10 @@ class AutoTab(gedit.Plugin):
       if line[0] == '\t':
         indent_count['tabs'] += 1
         last_indent_spaces = None
-        seen_tab = True
+        seen_tabs += 1
         continue
+      elif line[0] == ' ':
+        seen_spaces += 1
         
       indent = 0
       while line.startswith(' '):
@@ -180,9 +183,13 @@ class AutoTab(gedit.Plugin):
 
     # no indentations, leave old values
     if sum(indent_count.values()) == 0:
-      # default to tabs if we've seen one, otherwise spaces
+      # if we've seen tabs or spaces, default to those
       # can't guess at size, so using default
-      self.update_tabs(self.tabs_width, not seen_tab)
+      if seen_tabs or seen_spaces:
+        if seen_tabs > seen_spaces:
+          self.update_tabs(self.tabs_width, False)
+        else:
+          self.update_tabs(self.tabs_width, True)
       return    
 
     winner = max(indent_count, key=indent_count.get)
