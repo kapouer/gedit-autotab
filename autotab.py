@@ -166,9 +166,9 @@ class AutoTab(gedit.Plugin):
         seen_spaces += 1
         
       indent = 0
-      while line.startswith(' '):
-        indent += 1
-        line = line[1:]
+      for indent in range(0, len(line)):
+        if line[indent] != ' ':
+          break
        
       if indent == last_indent:
         if last_indent_spaces:
