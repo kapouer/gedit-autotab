@@ -4,41 +4,84 @@
 # Can be used together with the Modelines plugin without ill effect, modelines
 # will take precedence.
 #
-# Copyright (C) 2007 Kristoffer Lundén (kristoffer.lunden@gmail.com)
+# Copyright (C) 2007-2010 Kristoffer Lundén (kristoffer.lunden@gmail.com)
 # Copyright (C) 2007 Lars Uebernickel (larsuebernickel@gmx.de)
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
-
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
+#
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import gedit
-import gconf
 import operator
 
+
+# Mockup of GConf client, so that plugin works on Windows.
+# Workaround until GSettings arrives.  
+class FakeGConfClient():
+
+  def __init__(self):
+    self.size = 4
+    self.spaces = True
+
+  def set_defaults(self, window):
+    view = window.get_active_view()
+    if view:
+      self.spaces = view.get_insert_spaces_instead_of_tabs()
+      self.size = view.get_tab_width()
+
+  def client_get_default(self):
+    return self
+
+  def get_int(self, key):
+    if key == "/apps/gedit-2/preferences/editor/tabs/tabs_size":
+      return self.size
+    return 0
+
+  def get_bool(self, key):
+    if key == "/apps/gedit-2/preferences/editor/tabs/insert_spaces":
+      return self.spaces
+    return False
+
+  def notify_add(self, key, func):
+    return None
+
+
+# If there is no gconf, fake it out
+try:
+    import gconf
+except ImportError:
+    gconf = FakeGConfClient()
+
+
+# Main class
 class AutoTab(gedit.Plugin):
 
   def activate(self, window):
-  
+
     self.window = window
     self.spaces_instead_of_tabs = False
     self.tabs_width = 2
-    
+
     # Prime the statusbar
     self.statusbar = window.get_statusbar()
     self.context_id = self.statusbar.get_context_id("AutoTab")
     self.message_id = None
 
     # Init defaults, set up callbacks to get notified of changes
-    client = gconf.client_get_default() 
+    client = gconf.client_get_default()
+
+    if client.__class__.__name__ == 'FakeGConfClient':
+      client.set_defaults(window)
+
     self.new_tabs_size(client)
     self.new_insert_spaces(client)
     client.notify_add("/apps/gedit-2/preferences/editor/tabs/tabs_size", self.new_tabs_size)
@@ -76,12 +119,12 @@ class AutoTab(gedit.Plugin):
     doc.disconnect(loaded_id)
     doc.disconnect(saved_id)
     doc.set_data("AutoTabPluginHandlerIds", None)
-  
+
   # If default tab size changes
   def new_tabs_size(self, client, id=None, entry=None, data=None):
     self.tabs_width = client.get_int("/apps/gedit-2/preferences/editor/tabs/tabs_size")
     self.update_tabs(self.tabs_width, self.spaces_instead_of_tabs)
-  
+
   # If default space/tabs changes
   def new_insert_spaces(self, client, id=None, entry=None, data=None):
     self.spaces_instead_of_tabs = client.get_bool("/apps/gedit-2/preferences/editor/tabs/insert_spaces")
@@ -94,7 +137,7 @@ class AutoTab(gedit.Plugin):
       view.set_tab_width(size)
       view.set_insert_spaces_instead_of_tabs(space)
       self.update_status()
-      
+
   # Statusbar message
   def update_status(self):
     view = self.window.get_active_view()
@@ -124,7 +167,7 @@ class AutoTab(gedit.Plugin):
     if view.get_data("AutoTabSkip"):
       self.update_status()
       return
-    
+
     # Modelines plugin compatibility, if ModelineOptions has been set with
     # any tab related data, we assume Modelines has done the right thing and
     # just update our UI with the existing settings.
@@ -133,15 +176,15 @@ class AutoTab(gedit.Plugin):
       if modeline.has_key("tabs-width") or modeline.has_key("use-tabs"):
         self.update_status()
         return
-		
-		# End of Modelines stuff,
-		# start of Auto Tabs own stuff
 
-    # Special case for makefiles, so the plugin uses tabs even for the empty file:		
+    # End of Modelines stuff,
+    # start of Auto Tabs own stuff
+
+    # Special case for makefiles, so the plugin uses tabs even for the empty file:    
     if doc.get_mime_type() == "text/x-makefile" or doc.get_short_name_for_display() == "Makefile":
       self.update_tabs(self.tabs_width, False)
       return
-				    
+
     start, end = doc.get_bounds()
 
     if not end:
@@ -156,7 +199,7 @@ class AutoTab(gedit.Plugin):
     for line in text.splitlines():
       if len(line) == 0 or not line[0].isspace():
         continue
-      
+
       if line[0] == '\t':
         indent_count['tabs'] += 1
         last_indent_spaces = None
@@ -164,12 +207,12 @@ class AutoTab(gedit.Plugin):
         continue
       elif line[0] == ' ':
         seen_spaces += 1
-        
+
       indent = 0
       for indent in range(0, len(line)):
         if line[indent] != ' ':
           break
-       
+
       if indent == last_indent:
         if last_indent_spaces:
           indent_count[last_indent_spaces] += 1
@@ -197,4 +240,4 @@ class AutoTab(gedit.Plugin):
       self.update_tabs(self.tabs_width, False)
     else:
       self.update_tabs(winner, True)
-    
+
