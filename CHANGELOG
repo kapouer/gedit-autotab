@@ -1,7 +1,8 @@
-Auto Tab (trunk) 2010-07-01
-  * Fix deprecation warning (issue #8)
+Auto Tab (0.7) 2010-07-05
+  * Fix deprecated method calls (issue #8)
   * Added a Makefile for install/uninstall
   * Workaround for issue #13, try to guess tab/spaces for file with weird indent
+  * Make plugin work on Windows, by faking gconf
 
 Auto Tab (0.6)  2009-09-27
   * Special case Makefiles so they always use tabs.
