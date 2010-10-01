@@ -111,14 +111,41 @@ class AutoTab(gedit.Plugin):
     # thing first.
     loaded_id = doc.connect_after("loaded", self.auto_tab, view)
     saved_id  = doc.connect_after("saved", self.auto_tab, view)
-    doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id))
+    pasted_id = view.connect("paste-clipboard", self.on_paste)
+    doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id, pasted_id))
 
   def disconnect_handlers(self, view):
     doc = view.get_buffer()
-    loaded_id, saved_id = doc.get_data("AutoTabPluginHandlerIds")
+    loaded_id, saved_id, pasted_id = doc.get_data("AutoTabPluginHandlerIds")
     doc.disconnect(loaded_id)
     doc.disconnect(saved_id)
+    view.disconnect(pasted_id)
     doc.set_data("AutoTabPluginHandlerIds", None)
+
+  # capture paste
+  def on_paste(self, view):
+    clipboard = view.get_clipboard(selection="CLIPBOARD")
+    view.stop_emission('paste-clipboard')
+
+    doc = view.get_buffer()
+
+    text = clipboard.wait_for_text()
+
+    if text is None:
+      # nothing on clipboard
+      return
+    
+    iter = doc.get_iter_at_mark(doc.get_insert())
+
+    # just testing that we are here
+    # text = '*****' + text
+
+    doc.begin_user_action()
+    doc.delete_selection(False, True)
+    doc.insert_at_cursor(text)
+    doc.end_user_action()
+
+    view.scroll_mark_onscreen(doc.get_insert())
 
   # If default tab size changes
   def new_tabs_size(self, client, id=None, entry=None, data=None):
