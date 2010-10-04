@@ -134,17 +134,78 @@ class AutoTab(gedit.Plugin):
     if text is None:
       # nothing on clipboard
       return
-    
-    iter = doc.get_iter_at_mark(doc.get_insert())
 
-    # just testing that we are here
-    # text = '*****' + text
+    # start and end of selection, or the same if no selection    
+    start_iter = doc.get_iter_at_mark(doc.get_insert())
+    end_iter = doc.get_iter_at_mark(doc.get_selection_bound())
+
+    # the line above and below selection/cursor position
+    start_line = start_iter.get_line()
+    end_line = end_iter.get_line()
+    if start_line > 0:
+      start_line -= 1
+    if end_line < doc.get_line_count() - 1:
+      end_line += 1
+    
+    line_iter = doc.get_iter_at_line(start_iter.get_line())
+    
+    before_iter = doc.get_iter_at_line(start_line)
+    after_iter = doc.get_iter_at_line(end_line)
+    
+    space = view.get_insert_spaces_instead_of_tabs()
+    size = view.get_tab_width()
+    if space:
+      tab = " "
+    else:
+      tab = "\t"
+    
+    while line_iter.get_char() == tab:
+      line_iter.forward_char()
+    while before_iter.get_char() == tab:
+      before_iter.forward_char()
+
+    # pick the line, before or after with the most indent:
+    #indent = max(line_iter.get_line_offset(), before_iter.get_line_offset(), after_iter.get_line_offset())
+    indent = max(line_iter.get_line_offset(), before_iter.get_line_offset())
+
+    # check the position we are pasting on, to see if we are inside non-whitespace
+    # if so, assume position is already correct and do not paste
+    text_before_paste = doc.get_text(line_iter, start_iter)
+    inside_line = len(text_before_paste.translate(None, " \t")) > 0
+    if not inside_line:
+      doc.delete(line_iter, start_iter)
+    doc.delete_selection(False, True)
+
+    # this rounds to multiple of the tab settings, if needed
+    # ie if indent is 7 and the tab size is 2, it will go to 6 instead
+    if(space):
+      indent /= size
+
+    lines = text.splitlines(True)
 
     doc.begin_user_action()
-    doc.delete_selection(False, True)
-    doc.insert_at_cursor(text)
-    doc.end_user_action()
+    
+    last_line_indent = -1
+    for line in lines:
+      for line_indent in range(0, len(line)):
+        if line[line_indent] != tab:
+          break
+          
+      if last_line_indent != -1: # not first line
+        if line_indent > last_line_indent:
+          indent += 1
+        elif line_indent < last_line_indent:
+          indent -= 1
 
+      prefix = tab * indent * size
+      
+      if inside_line and last_line_indent == -1: # first line
+        doc.insert_at_cursor(line)
+      else:
+        doc.insert_at_cursor(prefix + line.lstrip())
+      last_line_indent = line_indent
+
+    doc.end_user_action()
     view.scroll_mark_onscreen(doc.get_insert())
 
   # If default tab size changes
