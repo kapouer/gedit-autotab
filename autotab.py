@@ -111,15 +111,17 @@ class AutoTab(gedit.Plugin):
     # thing first.
     loaded_id = doc.connect_after("loaded", self.auto_tab, view)
     saved_id  = doc.connect_after("saved", self.auto_tab, view)
-    pasted_id = view.connect("paste-clipboard", self.on_paste)
-    doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id, pasted_id))
+    #pasted_id = view.connect("paste-clipboard", self.on_paste)
+    #doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id, pasted_id))
+    doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id))
 
   def disconnect_handlers(self, view):
     doc = view.get_buffer()
-    loaded_id, saved_id, pasted_id = doc.get_data("AutoTabPluginHandlerIds")
+    #loaded_id, saved_id, pasted_id = doc.get_data("AutoTabPluginHandlerIds")
+    loaded_id, saved_id = doc.get_data("AutoTabPluginHandlerIds")
     doc.disconnect(loaded_id)
     doc.disconnect(saved_id)
-    view.disconnect(pasted_id)
+    #view.disconnect(pasted_id)
     doc.set_data("AutoTabPluginHandlerIds", None)
 
   # capture paste
@@ -284,6 +286,7 @@ class AutoTab(gedit.Plugin):
     last_indent_spaces = None
     seen_tabs = 0
     seen_spaces = 0
+
     for line in text.splitlines():
       if len(line) == 0 or not line[0].isspace():
         continue
@@ -301,16 +304,20 @@ class AutoTab(gedit.Plugin):
         if line[indent] != ' ':
           break
 
+      # Same indent as last line, count it towards the proper multiple
+      # but only if there wasn't a tabbed line inbetween.
       if indent == last_indent:
         if last_indent_spaces:
           indent_count[last_indent_spaces] += 1
         continue
-      for i in (2, 3, 4, 8):
-        if last_indent + i == indent:
-          last_indent_spaces = i
-          indent_count[i] += 1;
-          last_indent = indent
-          break
+
+      # The indentation must be one step in or out and one of the
+      # variants we're tracking
+      indent_diff = abs(indent - last_indent)
+      if indent_diff in (2, 3, 4, 8):
+        last_indent_spaces = indent_diff
+        indent_count[indent_diff] += 1;
+        last_indent = indent
 
     # no indentations detected
     if sum(indent_count.values()) == 0:

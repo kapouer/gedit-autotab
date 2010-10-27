@@ -1,3 +1,6 @@
+  Auto Tab (0.8) TBD
+    * Handle files with mixed tabs and spaces better, patch by Pierre Ossman
+
   Auto Tab (0.7) 2010-07-05
     * Fix deprecated method calls (issue #8)
     * Added a Makefile for install/uninstall
