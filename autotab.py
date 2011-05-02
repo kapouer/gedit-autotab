@@ -103,7 +103,11 @@ class AutoTab(gedit.Plugin):
       self.disconnect_handlers(view)
 
     if self.message_id:
-      self.statusbar.remove_message(self.context_id, self.message_id)
+      if hasattr(self.statusbar, 'remove_message'):
+        self.statusbar.remove_message(self.context_id, self.message_id)
+      else:
+        self.statusbar.remove(self.context_id, self.message_id)
+
 
   def connect_handlers(self, view):
     doc = view.get_buffer()
@@ -239,7 +243,11 @@ class AutoTab(gedit.Plugin):
       else:
         message = "Tabs"
       if self.message_id:
-        self.statusbar.remove_message(self.context_id, self.message_id)
+        if hasattr(self.statusbar, 'remove_message'):
+          self.statusbar.remove_message(self.context_id, self.message_id)
+        else:
+          self.statusbar.remove(self.context_id, self.message_id)
+
       self.message_id = self.statusbar.push(self.context_id, "Indentation: %s" % message)
 
   # Make sure correct tabs are displayed
