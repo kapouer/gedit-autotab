@@ -20,86 +20,46 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gedit
+from gi.repository import GObject, Gio, Gedit
 import operator
 
 
-# Mockup of GConf client, so that plugin works on Windows.
-# Workaround until GSettings arrives.  
-class FakeGConfClient():
-
-  def __init__(self):
-    self.size = 4
-    self.spaces = True
-
-  def set_defaults(self, window):
-    view = window.get_active_view()
-    if view:
-      self.spaces = view.get_insert_spaces_instead_of_tabs()
-      self.size = view.get_tab_width()
-
-  def client_get_default(self):
-    return self
-
-  def get_int(self, key):
-    if key == "/apps/gedit-2/preferences/editor/tabs/tabs_size":
-      return self.size
-    return 0
-
-  def get_bool(self, key):
-    if key == "/apps/gedit-2/preferences/editor/tabs/insert_spaces":
-      return self.spaces
-    return False
-
-  def notify_add(self, key, func):
-    return None
-
-
-# If there is no gconf, fake it out
-try:
-    import gconf
-except ImportError:
-    gconf = FakeGConfClient()
-
-
 # Main class
-class AutoTab(gedit.Plugin):
+class AutoTab(GObject.Object, Gedit.WindowActivatable):
+  __gtype_name__ = "AutoTab"
 
-  def activate(self, window):
-
-    self.window = window
+  window = GObject.property(type=Gedit.Window)
+  
+  def do_activate(self):
     self.spaces_instead_of_tabs = False
     self.tabs_width = 2
 
     # Prime the statusbar
-    self.statusbar = window.get_statusbar()
+    self.statusbar = self.window.get_statusbar()
     self.context_id = self.statusbar.get_context_id("AutoTab")
     self.message_id = None
 
-    # Init defaults, set up callbacks to get notified of changes
-    client = gconf.client_get_default()
+    settings = Gio.Settings("org.gnome.gedit.preferences.editor")
+    
+    self.new_tabs_size(settings)
+    self.new_insert_spaces(settings)
+    
+    settings.connect("changed::tabs-size", self.new_tabs_size)
+    settings.connect("changed::insert-spaces", self.new_insert_spaces)
 
-    if client.__class__.__name__ == 'FakeGConfClient':
-      client.set_defaults(window)
-
-    self.new_tabs_size(client)
-    self.new_insert_spaces(client)
-    client.notify_add("/apps/gedit-2/preferences/editor/tabs/tabs_size", self.new_tabs_size)
-    client.notify_add("/apps/gedit-2/preferences/editor/tabs/insert_spaces", self.new_insert_spaces)
-
-    for view in window.get_views(): 
+    for view in self.window.get_views(): 
       self.connect_handlers(view)
       self.auto_tab(view.get_buffer(), None, view)
 
-    tab_added_id = window.connect("tab_added", lambda w, t: self.connect_handlers(t.get_view()))
-    window.set_data("AutoTabPluginHandlerId", tab_added_id)
+    tab_added_id = self.window.connect("tab_added", lambda w, t: self.connect_handlers(t.get_view()))
+    self.window.set_data("AutoTabPluginHandlerId", tab_added_id)
 
-  def deactivate(self, window):
-    tab_added_id = window.get_data("AutoTabPluginHandlerId")
-    window.disconnect(tab_added_id)
-    window.set_data("AutoTabPluginHandlerId", None)
+  def do_deactivate(self):
+    tab_added_id = self.window.get_data("AutoTabPluginHandlerId")
+    self.window.disconnect(tab_added_id)
+    self.window.set_data("AutoTabPluginHandlerId", None)
 
-    for view in window.get_views():
+    for view in self.window.get_views():
       self.disconnect_handlers(view)
 
     if self.message_id:
@@ -176,7 +136,7 @@ class AutoTab(gedit.Plugin):
 
     # check the position we are pasting on, to see if we are inside non-whitespace
     # if so, assume position is already correct and do not paste
-    text_before_paste = doc.get_text(line_iter, start_iter)
+    text_before_paste = doc.get_text(line_iter, start_iter, True)
     inside_line = len(text_before_paste.translate(None, " \t")) > 0
     if not inside_line:
       doc.delete(line_iter, start_iter)
@@ -215,13 +175,13 @@ class AutoTab(gedit.Plugin):
     view.scroll_mark_onscreen(doc.get_insert())
 
   # If default tab size changes
-  def new_tabs_size(self, client, id=None, entry=None, data=None):
-    self.tabs_width = client.get_int("/apps/gedit-2/preferences/editor/tabs/tabs_size")
+  def new_tabs_size(self, settings, key=None):
+    self.tabs_width = settings.get_value("tabs-size").get_uint32()
     self.update_tabs(self.tabs_width, self.spaces_instead_of_tabs)
 
   # If default space/tabs changes
-  def new_insert_spaces(self, client, id=None, entry=None, data=None):
-    self.spaces_instead_of_tabs = client.get_bool("/apps/gedit-2/preferences/editor/tabs/insert_spaces")
+  def new_insert_spaces(self, settings, key=None):
+    self.spaces_instead_of_tabs = settings.get_boolean("insert-spaces")
     self.update_tabs(self.tabs_width, self.spaces_instead_of_tabs)
 
   # Update the values and set a new statusbar message  
@@ -251,7 +211,7 @@ class AutoTab(gedit.Plugin):
       self.message_id = self.statusbar.push(self.context_id, "Indentation: %s" % message)
 
   # Make sure correct tabs are displayed
-  def update_ui(self, window):
+  def do_update_state(self):
     self.update_status()
 
   # Main workhorse, identify what tabs we should use and use them.
@@ -287,7 +247,7 @@ class AutoTab(gedit.Plugin):
 
     if not end:
       return
-    text = doc.get_text(start, end)
+    text = doc.get_text(start, end, True)
 
     indent_count = {'tabs':0, 2:0, 3:0, 4:0, 8:0}
     last_indent = 0
