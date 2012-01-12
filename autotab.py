@@ -23,7 +23,6 @@
 from gi.repository import GObject, Gio, Gedit
 import operator
 
-
 # Main class
 class AutoTab(GObject.Object, Gedit.WindowActivatable):
   __gtype_name__ = "AutoTab"
@@ -250,8 +249,6 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     text = doc.get_text(start, end, True)
 
     indent_count = {'tabs':0, 2:0, 3:0, 4:0, 8:0}
-    last_indent = 0
-    last_indent_spaces = None
     seen_tabs = 0
     seen_spaces = 0
 
@@ -261,7 +258,6 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
 
       if line[0] == '\t':
         indent_count['tabs'] += 1
-        last_indent_spaces = None
         seen_tabs += 1
         continue
       elif line[0] == ' ':
@@ -272,20 +268,12 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
         if line[indent] != ' ':
           break
 
-      # Same indent as last line, count it towards the proper multiple
-      # but only if there wasn't a tabbed line inbetween.
-      if indent == last_indent:
-        if last_indent_spaces:
-          indent_count[last_indent_spaces] += 1
-        continue
+      for spaces in indent_count.keys():
+        if type(spaces) is not int:
+          continue
 
-      # The indentation must be one step in or out and one of the
-      # variants we're tracking
-      indent_diff = abs(indent - last_indent)
-      if indent_diff in (2, 3, 4, 8):
-        last_indent_spaces = indent_diff
-        indent_count[indent_diff] += 1;
-        last_indent = indent
+        if (indent % spaces) == 0:
+          indent_count[spaces] += 1
 
     # no indentations detected
     if sum(indent_count.values()) == 0:
@@ -298,9 +286,18 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
           self.update_tabs(self.tabs_width, True)
       return    
 
-    winner = max(indent_count, key=indent_count.get)
+    # Since some indentation steps may be multiples of others, we
+    # need to prioritise larger indentations when there is a tie.
+    winner = None
+
+    keys = indent_count.keys()
+    keys.sort()
+    keys.reverse()
+    for key in keys:
+      if (winner is None) or (indent_count[key] > indent_count[winner]):
+        winner = key
+
     if winner == 'tabs':
       self.update_tabs(self.tabs_width, False)
     else:
       self.update_tabs(winner, True)
-
