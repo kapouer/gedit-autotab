@@ -21,6 +21,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gi.repository import GObject, Gio, Gedit
+from gi.repository import Gtk, Gdk
 import operator
 
 # Main class
@@ -51,12 +52,12 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
       self.auto_tab(view.get_buffer(), None, view)
 
     tab_added_id = self.window.connect("tab_added", lambda w, t: self.connect_handlers(t.get_view()))
-    self.window.set_data("AutoTabPluginHandlerId", tab_added_id)
+    self.window.AutoTabPluginHandlerId = tab_added_id
 
   def do_deactivate(self):
-    tab_added_id = self.window.get_data("AutoTabPluginHandlerId")
+    tab_added_id = self.window.AutoTabPluginHandlerId
     self.window.disconnect(tab_added_id)
-    self.window.set_data("AutoTabPluginHandlerId", None)
+    self.window.AutoTabPluginHandlerId = None
 
     for view in self.window.get_views():
       self.disconnect_handlers(view)
@@ -72,29 +73,23 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     doc = view.get_buffer()
     # Using connect_after() because we want other plugins to do their
     # thing first.
-    loaded_id = doc.connect_after("loaded", self.auto_tab, view)
-    saved_id  = doc.connect_after("saved", self.auto_tab, view)
-    #pasted_id = view.connect("paste-clipboard", self.on_paste)
-    #doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id, pasted_id))
-    doc.set_data("AutoTabPluginHandlerIds", (loaded_id, saved_id))
+    loaded_id = doc.connect_after("loaded", self.auto_tab, None, view)
+    saved_id  = doc.connect_after("saved", self.auto_tab, None, view)
+    pasted_id = view.connect("paste-clipboard", self.on_paste)
+    #doc.AutoTabPluginHandlerIds = (loaded_id, saved_id, pasted_id)
+    doc.AutoTabPluginHandlerIds = (loaded_id, saved_id)
 
   def disconnect_handlers(self, view):
     doc = view.get_buffer()
-    #loaded_id, saved_id, pasted_id = doc.get_data("AutoTabPluginHandlerIds")
-    loaded_id, saved_id = doc.get_data("AutoTabPluginHandlerIds")
+    #loaded_id, saved_id, pasted_id = doc.AutoTabPluginHandlerIds
+    loaded_id, saved_id = doc.AutoTabPluginHandlerIds
     doc.disconnect(loaded_id)
     doc.disconnect(saved_id)
     #view.disconnect(pasted_id)
-    doc.set_data("AutoTabPluginHandlerIds", None)
+    doc.AutoTabPluginHandlerIds = None
 
-  # capture paste
-  def on_paste(self, view):
-    clipboard = view.get_clipboard(selection="CLIPBOARD")
-    view.stop_emission('paste-clipboard')
-
+  def on_clipboard_text(self, clipboard, text, view):
     doc = view.get_buffer()
-
-    text = clipboard.wait_for_text()
 
     if text is None:
       # nothing on clipboard
@@ -136,14 +131,14 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     # check the position we are pasting on, to see if we are inside non-whitespace
     # if so, assume position is already correct and do not paste
     text_before_paste = doc.get_text(line_iter, start_iter, True)
-    inside_line = len(text_before_paste.translate(None, " \t")) > 0
+    inside_line = len(text_before_paste.translate(" \t")) > 0
     if not inside_line:
       doc.delete(line_iter, start_iter)
     doc.delete_selection(False, True)
 
     # this rounds to multiple of the tab settings, if needed
     # ie if indent is 7 and the tab size is 2, it will go to 6 instead
-    if(space):
+    if (space):
       indent /= size
 
     lines = text.splitlines(True)
@@ -162,7 +157,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
         elif line_indent < last_line_indent:
           indent -= 1
 
-      prefix = tab * indent * size
+      prefix = tab * round(indent * size)
       
       if inside_line and last_line_indent == -1: # first line
         doc.insert_at_cursor(line)
@@ -172,6 +167,16 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
 
     doc.end_user_action()
     view.scroll_mark_onscreen(doc.get_insert())
+    view.scroll_mark_onscreen(doc.get_insert())
+    
+    
+
+
+  # capture paste
+  def on_paste(self, view):
+    clipboard = Gtk.Clipboard.get_for_display(view.get_display(), Gdk.SELECTION_CLIPBOARD)
+    clipboard.request_text(self.on_clipboard_text, view)
+    view.stop_emission('paste-clipboard')
 
   # If default tab size changes
   def new_tabs_size(self, settings, key=None):
@@ -219,17 +224,17 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
       pass
 
     # Other plugins compatibility, other plugins can do
-    # view.set_data("AutoTabSkip", True)
+    # view.AutoTabSkip = True
     # and Auto Tab will skip that document as long as this value is true.
-    if view.get_data("AutoTabSkip"):
+    if hasattr(view, 'AutoTabSkip') and view.AutoTabSkip:
       self.update_status()
       return
 
     # Modelines plugin compatibility, if ModelineOptions has been set with
     # any tab related data, we assume Modelines has done the right thing and
     # just update our UI with the existing settings.
-    modeline = view.get_data("ModelineOptions")
-    if modeline:
+    if hasattr(view, 'ModelineOptions') and view.ModelineOptions:
+      modeline = view.ModelineOptions
       if modeline.has_key("tabs-width") or modeline.has_key("use-tabs"):
         self.update_status()
         return
@@ -291,8 +296,6 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     winner = None
 
     keys = indent_count.keys()
-    keys.sort()
-    keys.reverse()
     for key in keys:
       if (winner is None) or (indent_count[key] > indent_count[winner]):
         winner = key
