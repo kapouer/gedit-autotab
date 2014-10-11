@@ -1,6 +1,6 @@
 INSTALLATION INSTRUCTIONS:
 
-* Put autotab.gedit-plugin and autotab.py inside .gnome2/gedit/plugins/ in your home directory.
+* Put autotab.gedit-plugin and autotab.py inside ~/.local/share/gedit/plugins/
   - Or, run "make install" as yourself, not root.
 * (Re)start Gedit.
 * Go to Edit->Preferences->Plugins and check the box for Auto Tab.
