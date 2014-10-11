@@ -118,6 +118,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
       tab = " "
     else:
       tab = "\t"
+      size = 1
     
     while line_iter.get_char() == tab:
       line_iter.forward_char()
