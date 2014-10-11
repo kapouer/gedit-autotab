@@ -1,6 +1,7 @@
   Auto Tab (0.8) TBD
     * Handle files with mixed tabs and spaces better, patch by Pierre Ossman
     * Make plugin work on Mac OS X, by falling back to statusbar.remove()
+    * Port to gedit 3.14 / Python 3 / Gtk 3 by Jérémy Lal
 
   Auto Tab (0.7) 2010-07-05
     * Fix deprecated method calls (issue #8)
