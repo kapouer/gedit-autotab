@@ -29,7 +29,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
   __gtype_name__ = "AutoTab"
 
   window = GObject.property(type=Gedit.Window)
-  
+
   def do_activate(self):
     self.spaces_instead_of_tabs = False
     self.tabs_width = 2
@@ -40,14 +40,14 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     self.message_id = None
 
     settings = Gio.Settings("org.gnome.gedit.preferences.editor")
-    
+
     self.new_tabs_size(settings)
     self.new_insert_spaces(settings)
-    
+
     settings.connect("changed::tabs-size", self.new_tabs_size)
     settings.connect("changed::insert-spaces", self.new_insert_spaces)
 
-    for view in self.window.get_views(): 
+    for view in self.window.get_views():
       self.connect_handlers(view)
       self.auto_tab(view.get_buffer(), None, view)
 
@@ -95,7 +95,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
       # nothing on clipboard
       return
 
-    # start and end of selection, or the same if no selection    
+    # start and end of selection, or the same if no selection
     start_iter = doc.get_iter_at_mark(doc.get_insert())
     end_iter = doc.get_iter_at_mark(doc.get_selection_bound())
 
@@ -106,12 +106,12 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
       start_line -= 1
     if end_line < doc.get_line_count() - 1:
       end_line += 1
-    
     line_iter = doc.get_iter_at_line(start_iter.get_line())
-    
+
+
     before_iter = doc.get_iter_at_line(start_line)
     after_iter = doc.get_iter_at_line(end_line)
-    
+
     space = view.get_insert_spaces_instead_of_tabs()
     size = view.get_tab_width()
     if space:
@@ -119,7 +119,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     else:
       tab = "\t"
       size = 1
-    
+
     # check the position we are pasting on, to see if we are inside non-whitespace
     # if so, assume position is already correct and do not paste
     # get this before doing forward_char
@@ -147,13 +147,13 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     lines = text.splitlines(True)
 
     doc.begin_user_action()
-    
+
     last_line_indent = -1
     for line in lines:
       for line_indent in range(0, len(line)):
         if line[line_indent] != tab:
           break
-          
+
       if last_line_indent != -1: # not first line
         if line_indent > last_line_indent:
           indent += 1
@@ -161,7 +161,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
           indent -= 1
 
       prefix = tab * round(indent * size)
-      
+
       if inside_line and last_line_indent == -1: # first line
         doc.insert_at_cursor(line)
       else:
@@ -171,8 +171,8 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     doc.end_user_action()
     view.scroll_mark_onscreen(doc.get_insert())
     view.scroll_mark_onscreen(doc.get_insert())
-    
-    
+
+
 
 
   # capture paste
@@ -191,7 +191,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     self.spaces_instead_of_tabs = settings.get_boolean("insert-spaces")
     self.update_tabs(self.tabs_width, self.spaces_instead_of_tabs)
 
-  # Update the values and set a new statusbar message  
+  # Update the values and set a new statusbar message
   def update_tabs(self, size, space):
     view = self.window.get_active_view()
     if view:
@@ -245,7 +245,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     # End of Modelines stuff,
     # start of Auto Tabs own stuff
 
-    # Special case for makefiles, so the plugin uses tabs even for the empty file:    
+    # Special case for makefiles, so the plugin uses tabs even for the empty file:
     if doc.get_mime_type() == "text/x-makefile" or doc.get_short_name_for_display() == "Makefile":
       self.update_tabs(self.tabs_width, False)
       return
@@ -292,7 +292,7 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
           self.update_tabs(self.tabs_width, False)
         else:
           self.update_tabs(self.tabs_width, True)
-      return    
+      return
 
     # Since some indentation steps may be multiples of others, we
     # need to prioritise larger indentations when there is a tie.
