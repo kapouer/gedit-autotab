@@ -120,6 +120,11 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
       tab = "\t"
       size = 1
     
+    # check the position we are pasting on, to see if we are inside non-whitespace
+    # if so, assume position is already correct and do not paste
+    # get this before doing forward_char
+    text_before_paste = doc.get_text(line_iter, start_iter, True)
+
     while line_iter.get_char() == tab:
       line_iter.forward_char()
     while before_iter.get_char() == tab:
@@ -129,9 +134,6 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     #indent = max(line_iter.get_line_offset(), before_iter.get_line_offset(), after_iter.get_line_offset())
     indent = max(line_iter.get_line_offset(), before_iter.get_line_offset())
 
-    # check the position we are pasting on, to see if we are inside non-whitespace
-    # if so, assume position is already correct and do not paste
-    text_before_paste = doc.get_text(line_iter, start_iter, True)
     inside_line = len(text_before_paste.translate(" \t")) > 0
     if not inside_line:
       doc.delete(line_iter, start_iter)
