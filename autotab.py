@@ -268,9 +268,14 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     indent_count = {'tabs':0, 2:0, 3:0, 4:0, 8:0}
     seen_tabs = 0
     seen_spaces = 0
+    last_indent = 0
 
     for line in text.splitlines():
-      if len(line) == 0 or not line[0].isspace():
+      if len(line) == 0:
+        continue
+
+      if not line[0].isspace():
+        last_indent = 0
         continue
 
       if line[0] == '\t':
@@ -292,6 +297,12 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
         if (indent % spaces) == 0:
           indent_count[spaces] += 1
 
+        # double weight if this represents +1 indent
+        if (indent - last_indent == spaces):
+          indent_count[spaces] += 1
+
+      last_indent = indent
+
     # no indentations detected
     if sum(indent_count.values()) == 0:
       # if we've seen tabs or spaces, default to those
@@ -303,8 +314,6 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
           self.update_tabs(self.tabs_width, True)
       return
 
-    # Since some indentation steps may be multiples of others, we
-    # need to prioritise larger indentations when there is a tie.
     winner = None
 
     keys = indent_count.keys()
