@@ -73,8 +73,8 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     doc = view.get_buffer()
     # Using connect_after() because we want other plugins to do their
     # thing first.
-    loaded_id = doc.connect_after("loaded", self.auto_tab, None, view)
-    saved_id  = doc.connect_after("saved", self.auto_tab, None, view)
+    loaded_id = doc.connect_after("loaded", self.auto_tab, view)
+    saved_id  = doc.connect_after("saved", self.auto_tab, view)
     pasted_id = view.connect("paste-clipboard", self.on_paste)
     #doc.AutoTabPluginHandlerIds = (loaded_id, saved_id, pasted_id)
     doc.AutoTabPluginHandlerIds = (loaded_id, saved_id)
@@ -222,7 +222,16 @@ class AutoTab(GObject.Object, Gedit.WindowActivatable):
     self.update_status()
 
   # Main workhorse, identify what tabs we should use and use them.
-  def auto_tab(self, doc, error, view):
+  def auto_tab(self, doc, *args):
+    # gedit < 3.14 passes an error paramater as the first argument,
+    # gedit >= 3.14 does not.
+    if len(args) > 1:
+      error = args[0]
+      view = args[1]
+    else:
+      error = None
+      view = args[0]
+
     if error is not None:
       pass
 
