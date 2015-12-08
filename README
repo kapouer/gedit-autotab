@@ -1,6 +1,6 @@
 INSTALLATION INSTRUCTIONS:
 
-* Put autotab.gedit-plugin and autotab.py inside ~/.local/share/gedit/plugins/
+* Put autotab.plugin and autotab.py inside ~/.local/share/gedit/plugins/
   - Or, run "make install" as yourself, not root.
 * (Re)start Gedit.
 * Go to Edit->Preferences->Plugins and check the box for Auto Tab.
@@ -9,7 +9,7 @@ Done!
 
 USAGE:
 
-You should not need to do anything, the plugin should take care of adjusting the tab width and space/tab settings for each file as you edit them. The plugin assumes that either tabs, or spaces width a width of 2, 3, 4 or 8 is used. In the case of tabs, your local settings is used for the width to display. You can see an entry in the status bar that will tell what the current indentation is.
+You should not need to do anything, the plugin should take care of adjusting the tab width and space/tab settings for each file as you edit them. The plugin assumes that either tabs, or spaces with a width of 2, 3, 4 or 8 is used. In the case of tabs, your local settings is used for the width to display. You can see an entry in the status bar that will tell what the current indentation is.
 
 If the Modelines plugin is also activated, any modelines it reads will be respected (Auto Tab will just display those values instead, and skip guessing altogether for that file).
 
